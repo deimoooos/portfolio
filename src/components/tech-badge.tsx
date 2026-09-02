@@ -39,15 +39,15 @@ import { cn } from "@/lib/utils";
 /**
  * Brand marks for the stacks used in `@/lib/profile`.
  *
- * Keys are lowercased tech names. Not every technology has a mark: Simple Icons
- * has dropped the Amazon and Microsoft families over trademark, so "Amazon Web
- * Services" and "Microsoft Power Platform" render text-only — that is the
- * designed fallback, not a gap to work around. Verified against the installed
- * package rather than assumed; check there before adding a key.
+ * Keys are lowercased tech names. Simple Icons has dropped the Amazon and
+ * Microsoft families over trademark, so those two marks are inlined in
+ * `@/components/icons` instead. A name in neither set renders text-only — that
+ * is the designed fallback, not a gap to work around. Verified against the
+ * installed package rather than assumed; check there before adding a key.
  */
-/** Simple Icons are all drawn on a 24x24 canvas. */
+/** Simple Icons are all drawn on a 24x24 canvas, and each carries its hex. */
 function si(icon: SimpleIcon): Mark {
-  return { path: icon.path, viewBox: "0 0 24 24" };
+  return { path: icon.path, viewBox: "0 0 24 24", hex: icon.hex };
 }
 
 const TECH_ICONS: Record<string, Mark> = {
@@ -98,6 +98,20 @@ const TECH_ICONS: Record<string, Mark> = {
   typescript: si(siTypescript),
 };
 
+/**
+ * Whether a brand colour carries no hue at all.
+ *
+ * Next.js and OpenJDK are both literally `#000000`, and a black mark is not a
+ * colour to relight — it is a mark that should be drawn in whatever the theme
+ * calls foreground. Pushed through the lightness band instead it lands on a
+ * mid grey, which in dark mode is *dimmer* than the resting `muted-foreground`
+ * — a bloom running backwards. Measured: 6.94:1 at rest, 5.33:1 "lit".
+ */
+function isNeutral(hex: string) {
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return Math.max(r, g, b) - Math.min(r, g, b) < 12;
+}
+
 export function getTechIcon(tech: string): Mark | undefined {
   const key = tech.toLowerCase();
   // "Java 8", "Java 17" and "Java 21" are one mark. Falling back to the name
@@ -109,10 +123,19 @@ export function getTechIcon(tech: string): Mark | undefined {
 /**
  * A stack chip: brand mark + label.
  *
- * The mark is drawn in `currentColor` rather than the brand hex — it keeps the
- * neutral palette intact and guarantees the icon inherits the badge's contrast
- * in both themes. It is `aria-hidden` because the tech name sits right beside
- * it, so announcing it twice would only add noise.
+ * At rest the mark is `muted-foreground` — a step back from its label, so the
+ * chip reads as artwork plus a name rather than one uniform grey block, and so
+ * the bloom below has somewhere to travel from. On hover it lights up in its
+ * own brand colour, relit for the theme by the `brand-mark` utility.
+ *
+ * This is the one place on an otherwise entirely typographic site where drawn
+ * artwork appears, and colour is how a reader recognises a stack faster than
+ * they can read it. Keeping the palette neutral at rest is what stops that
+ * turning the section into logo soup.
+ *
+ * The mark is `aria-hidden` because the tech name sits right beside it, so
+ * announcing it twice would only add noise. A mark with no `hex` (Microsoft's
+ * four-square) simply does not bloom.
  */
 export function TechBadge({
   tech,
@@ -122,6 +145,8 @@ export function TechBadge({
   className?: string;
 }) {
   const icon = getTechIcon(tech);
+  const brand = icon?.hex;
+  const neutral = brand ? isNeutral(brand) : false;
 
   return (
     <Badge
@@ -151,8 +176,15 @@ export function TechBadge({
         // a card-filled chip reads as flat as an outlined one. `--surface`
         // exists for exactly this.
         "border-surface-border bg-surface",
-        "gap-2 transition-colors duration-200",
-        "hover:border-primary/40 hover:text-primary",
+        // Named group, so a `TechBadge` dropped inside some other `group`
+        // later cannot be lit by that one's hover.
+        "group/chip gap-2",
+        // No hover on the box itself. `border-primary/40` is the signal every
+        // genuinely clickable surface on this page uses, and a chip is content,
+        // not a control — the same false affordance the landing page's
+        // experience rows carried before they became links. Only the mark
+        // responds, and a logo colouring in reads as the mark noticing you
+        // rather than as a button.
         className,
       )}
     >
@@ -162,7 +194,18 @@ export function TechBadge({
           focusable="false"
           viewBox={icon.viewBox}
           fill="currentColor"
-          className="size-4 shrink-0"
+          style={
+            brand && !neutral
+              ? ({ "--brand": `#${brand}` } as React.CSSProperties)
+              : undefined
+          }
+          className={cn(
+            "size-4 shrink-0 text-muted-foreground transition-colors duration-200",
+            brand &&
+              (neutral
+                ? "group-hover/chip:text-foreground"
+                : "group-hover/chip:brand-mark"),
+          )}
         >
           <path d={icon.path} />
         </svg>

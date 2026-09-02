@@ -42,11 +42,16 @@ export default function Home() {
         <header
           id="top"
           className="relative isolate flex scroll-mt-32 flex-col gap-7"
+          // The one timing number the CSS beats are derived from. Everything
+          // in the `hero-*` keyframes is a multiple of this, so retiming the
+          // sweep cannot leave the glow or the role line out of step with it.
+          style={{ "--sweep": `${NAME_SWEEP_SECONDS}s` } as React.CSSProperties}
         >
           {/* Decorative wash behind the name. `isolate` keeps the negative
               z-index inside this header instead of sliding under the page. */}
           <div
             aria-hidden="true"
+            data-hero-glow
             // Sized down on small screens: at 390px the content column is
             // 342px, so a 30rem glow at -left-24 reached x=408 and widened the
             // document by 18px. Overflow to the *left* costs nothing in LTR.
@@ -55,26 +60,26 @@ export default function Home() {
 
           <div className="flex flex-col gap-4">
             {/*
-              * The name is swept by a moving gradient band on load.
-              *
-              * `colors` is the site's own gradient — `--gradient-from` (blue)
-              * to `--gradient-to` (steel) — rather than Magic UI's default
-              * five-colour palette, which belongs to a different brand. They
-              * are passed as `var()`, so the sweep follows the theme instead of
-              * being pinned to one set of hex values.
-              *
-              * CLAUDE.md says the gradient never goes on the <h1>, because
-              * `bg-clip-text` needs `text-transparent` and that costs contrast
-              * on the page's primary heading. This does not break that rule:
-              * the band is transient, and `textColor` leaves the resting state
-              * at `--foreground`, the same colour the heading had before.
-              *
-              * The real text is in the DOM throughout — crawlers and screen
-              * readers see the whole name, not a growing fragment — so unlike
-              * the summary below this needs no second copy. It also honours
-              * `prefers-reduced-motion` itself, jumping straight to the
-              * resting state.
-              */}
+             * The name is swept by a moving gradient band on load.
+             *
+             * `colors` is the site's own gradient — `--gradient-from` (blue)
+             * to `--gradient-to` (steel) — rather than Magic UI's default
+             * five-colour palette, which belongs to a different brand. They
+             * are passed as `var()`, so the sweep follows the theme instead of
+             * being pinned to one set of hex values.
+             *
+             * CLAUDE.md says the gradient never goes on the <h1>, because
+             * `bg-clip-text` needs `text-transparent` and that costs contrast
+             * on the page's primary heading. This does not break that rule:
+             * the band is transient, and `textColor` leaves the resting state
+             * at `--foreground`, the same colour the heading had before.
+             *
+             * The real text is in the DOM throughout — crawlers and screen
+             * readers see the whole name, not a growing fragment — so unlike
+             * the summary below this needs no second copy. It also honours
+             * `prefers-reduced-motion` itself, jumping straight to the
+             * resting state.
+             */}
             <h1 className="text-5xl font-semibold tracking-tight text-balance sm:text-7xl">
               <DiaTextReveal
                 text={profile.name}
@@ -91,7 +96,10 @@ export default function Home() {
               {/* The gradient lives on this line, not on the <h1>. Gradient text
                   needs `text-transparent`, which costs real contrast — not
                   something to spend on the page's primary heading. */}
-              <p className="w-fit bg-gradient-to-r from-gradient-from to-gradient-to bg-clip-text text-xl font-medium text-transparent sm:text-2xl">
+              <p
+                data-hero-role
+                className="w-fit bg-gradient-to-r from-gradient-from to-gradient-to bg-clip-text text-xl font-medium text-transparent sm:text-2xl"
+              >
                 {profile.role}
               </p>
 
@@ -128,25 +136,25 @@ export default function Home() {
           </div>
 
           {/*
-            * The summary types itself in. Two layers, stacked:
-            *
-            * The <p> underneath is the real one — it holds the whole summary,
-            * so the text is in the server-rendered HTML for crawlers, is what
-            * assistive tech reads, and reserves the paragraph's final height.
-            * Without it the CTAs below would be shoved down a line at a time as
-            * the text arrived. It is `text-transparent` rather than hidden
-            * because `visibility: hidden` and `display: none` would take it out
-            * of the accessibility tree, which is the one thing it is there for.
-            *
-            * The animation on top is decorative and `aria-hidden`: it renders a
-            * growing substring, and a screen reader following that would
-            * announce the sentence a fragment at a time.
-            *
-            * Under `prefers-reduced-motion` the layers swap — the animation is
-            * dropped and the real paragraph simply shows. Magic UI drives this
-            * from JS timers, so the global reduced-motion CSS cannot reach it;
-            * this variant is what actually honours the setting.
-            */}
+           * The summary types itself in. Two layers, stacked:
+           *
+           * The <p> underneath is the real one — it holds the whole summary,
+           * so the text is in the server-rendered HTML for crawlers, is what
+           * assistive tech reads, and reserves the paragraph's final height.
+           * Without it the CTAs below would be shoved down a line at a time as
+           * the text arrived. It is `text-transparent` rather than hidden
+           * because `visibility: hidden` and `display: none` would take it out
+           * of the accessibility tree, which is the one thing it is there for.
+           *
+           * The animation on top is decorative and `aria-hidden`: it renders a
+           * growing substring, and a screen reader following that would
+           * announce the sentence a fragment at a time.
+           *
+           * Under `prefers-reduced-motion` the layers swap — the animation is
+           * dropped and the real paragraph simply shows. Magic UI drives this
+           * from JS timers, so the global reduced-motion CSS cannot reach it;
+           * this variant is what actually honours the setting.
+           */}
           <div className="relative max-w-prose">
             <p className="text-base leading-relaxed text-transparent motion-reduce:text-muted-foreground">
               {profile.summary}

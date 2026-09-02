@@ -86,9 +86,15 @@ export const experience: readonly Experience[] = [
           "Partnered with executive management to align technology initiatives with business objectives.",
           "Drove architectural decisions, technology adoption, and long-term system strategy.",
           "Ensured software quality through technical leadership, code reviews, and system optimization.",
-          "Provided production support and lead root cause analysis for critical system issues."
+          "Provided production support and lead root cause analysis for critical system issues.",
         ],
-        stack: ["Amazon Web Services", "Spring Boot", "Java 21", "PostgreSQL", "Microsoft Power Platform"],
+        stack: [
+          "Amazon Web Services",
+          "Spring Boot",
+          "Java 21",
+          "PostgreSQL",
+          "Microsoft Power Platform",
+        ],
       },
       {
         title: "Software Development Lead",
@@ -102,7 +108,13 @@ export const experience: readonly Experience[] = [
           "Contributed to technology evaluation and architectural decision-making to support long-term platform evolution.",
           "Collaborated with QA, DevOps, and product teams to deliver high-quality releases using Agile methodologies and CI/CD practices.",
         ],
-        stack: ["Amazon Web Services", "Spring Boot", "Java 17", "PostgreSQL", "Microsoft Power Platform"],
+        stack: [
+          "Amazon Web Services",
+          "Spring Boot",
+          "Java 17",
+          "PostgreSQL",
+          "Microsoft Power Platform",
+        ],
       },
     ],
   },
@@ -126,7 +138,14 @@ export const experience: readonly Experience[] = [
           "Assisted in establishing architectural standards and guidelines for development teams to ensure consistency across projects.",
           "Collaborated with product owners to translate business requirements into technical specifications.",
         ],
-        stack: ["Amazon Web Services", "Spring Boot", "Java 8", "Java 17", "PostgreSQL", "Microsoft Power Platform"],
+        stack: [
+          "Amazon Web Services",
+          "Spring Boot",
+          "Java 8",
+          "Java 17",
+          "PostgreSQL",
+          "Microsoft Power Platform",
+        ],
       },
     ],
   },
@@ -148,7 +167,13 @@ export const experience: readonly Experience[] = [
           "Led initiatives to refactor legacy code, improving maintainability and reducing technical debt.",
           "Mentored and coached software engineers, fostering skill development and promoting best practices in software architecture.",
         ],
-        stack: ["Amazon Web Services", "Spring Boot", "Java 8", "PostgreSQL", "Microsoft Power Platform"],
+        stack: [
+          "Amazon Web Services",
+          "Spring Boot",
+          "Java 8",
+          "PostgreSQL",
+          "Microsoft Power Platform",
+        ],
       },
       {
         title: "Software Engineer",
@@ -165,7 +190,13 @@ export const experience: readonly Experience[] = [
           "Wrote comprehensive technical documentation, including code comments and user guides for future maintenance.",
           "Developed and maintained microservices to ensure system modularity and scalability.",
         ],
-        stack: ["Amazon Web Services", "Spring Boot", "Java 8", "PostgreSQL", "Microsoft Power Platform"],
+        stack: [
+          "Amazon Web Services",
+          "Spring Boot",
+          "Java 8",
+          "PostgreSQL",
+          "Microsoft Power Platform",
+        ],
       },
     ],
   },
@@ -173,12 +204,7 @@ export const experience: readonly Experience[] = [
 
 /** The groupings on `/tech-stack`, in the order they are rendered. */
 export type TechCategory =
-  | "Frontend"
-  | "Backend"
-  | "Cloud"
-  | "AI"
-  | "Security and IAM"
-  | "Tools";
+  "Frontend" | "Backend" | "Cloud" | "AI" | "Security and IAM" | "Tools";
 
 export type Tech = {
   /**
@@ -242,10 +268,7 @@ export const techStacks: readonly TechGroup[] = [
   },
   {
     category: "AI",
-    items: [
-      { name: "Anthropic" }, 
-      { name: "OpenAI" }
-    ],
+    items: [{ name: "Anthropic" }, { name: "OpenAI" }],
   },
   {
     category: "Security and IAM",
@@ -283,6 +306,17 @@ export const featuredTech: readonly string[] = techStacks
   .flatMap((group) => group.items)
   .filter((tech) => tech.featured)
   .map((tech) => tech.name);
+
+/**
+ * How many technologies the full list holds.
+ *
+ * Derived, like `featuredTech`, so the landing page's link cannot quote a
+ * number the page it points at does not have.
+ */
+export const techCount: number = techStacks.reduce(
+  (total, group) => total + group.items.length,
+  0,
+);
 
 export type Project = {
   name: string;

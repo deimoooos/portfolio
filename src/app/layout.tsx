@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { AmbientLight } from "@/components/ambient-light";
 import { MarginTexture } from "@/components/margin-texture";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -42,8 +43,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         <ThemeProvider>
-          {/* Decorative only, and behind everything — mounted here so both
-              routes get the same margins rather than only the landing page. */}
+          {/* Decorative only, and behind everything — mounted here so every
+              route gets the same room rather than only the landing page.
+              `AmbientLight` sits behind `MarginTexture` (-z-20 to -z-10), so
+              the dot field reads on top of the wash. */}
+          <AmbientLight />
           <MarginTexture />
           <SiteHeader />
           {children}

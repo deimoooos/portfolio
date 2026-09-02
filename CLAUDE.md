@@ -140,6 +140,74 @@ dates beyond the year, no durations, no earlier roles, no summaries, no stacks �
 all of that is `/experience`'s job. Adding any of it back erodes the reason the
 second route exists.
 
+**Each landing row is a link to that company's own anchor** —
+`/experience#a-movement`, not the top of the page. Those anchors already
+existed and nothing reached them; the row was a plain `<article>` that still
+carried `hover:` styling, so it looked interactive under a mouse, did nothing
+when clicked, and had no state at all on touch. Four things about the row are
+load-bearing:
+
+- **The whole row is the link, not the title.** The accessible name then
+  carries all four facts — "2023, Full-time, Junior Software Architect,
+  A-Movement Corporation" — which is exactly what someone needs before
+  activating it. A link around the title alone would announce a job title with
+  no employer.
+- **The arrow is visible at rest, not revealed on hover.** A hover-only
+  affordance does not exist on a phone: at 390px these rows were three blocks
+  of plain text with nothing saying they were tappable. It is
+  `text-muted-foreground`, which measures 4.74:1 light and 7.66:1 dark — a
+  control conveying meaning needs 3:1, and `/50` gave 1.96 and 2.7.
+- **It sits at the row's right edge, not after the title.** The row is full
+  width, so an arrow tucked after the words leaves ~380px of empty panel to its
+  right the moment the hover fill appears; out at the edge the three arrows line
+  up into a right-hand column answering the year column on the left. Inside the
+  `<h3>` it also wrapped to a phantom second line on the longest title at 390px,
+  making that row 28px taller than its neighbours.
+- **`transition-[…,translate]`, not `transform`.** Tailwind v4 compiles
+  `-translate-y-0.5` to the standalone `translate` property, so a transition
+  list naming `transform` animates nothing and the lift snaps.
+
+**Hover and focus raise contrast; nothing dims.** The year takes the accent, the
+company name comes to full `foreground` at 60ms, the arrow at the far edge lands
+at 120ms — the row resolves left to right rather than changing all at once.
+Receding the *other* rows is the usual way to focus a list, and it was measured
+and rejected: it takes the muted secondary text from 4.7:1 to about 2.6:1 for as
+long as the pointer is anywhere in the list. Measured on the hovered row, both
+themes: title 19.0/17.2, company 19.0/17.2, year 10.8/8.5, basis 4.5/6.9.
+
+**The role titles carry the section**, so they are `text-lg` rather than sharing
+a size with body text. The claim the page makes is a progression — Engineer to
+Senior to Architect to Lead to Assistant Manager — and it is carried by the
+titles rather than asserted in copy.
+
+### Arriving at an anchor says so
+
+`[data-target-flash]:target` gives the thing you asked for one soft pulse —
+`box-shadow` plus a `--glow` tint, fading over 2.2s after a 0.35s delay that
+lets the smooth scroll land. It is on `/experience`'s company `<article>`s and
+`/tech-stack`'s group `<section>`s.
+
+- **`box-shadow`, not padding or margin.** It adds no layout at all, so it
+  cannot disturb the timeline rail's dot arithmetic, which is measured against
+  the heading's first line.
+- It is motion, so it lives inside the reduced-motion guard. Without it there is
+  no pulse and `scroll-mt-32` parking the entry at the top is the
+  acknowledgement.
+
+**`/tech-stack`'s group `<section>`s had no `id` at all.** The id was computed
+only to label the heading (`${id}-heading`), so `/tech-stack#backend` resolved
+to nothing despite the `scroll-mt-32` sitting there ready for it. The id is now
+on the section, and the group index above the list is what uses it. `groupId()`
+is the single definition both share.
+
+**The index's counts are hidden from assistive tech.** A flex `gap` is not a
+word separator, so the bare numeral ran into the label as "Frontend5"; the
+digits are `aria-hidden` and an `sr-only` phrase carries the count. Verified
+against the AX tree: "Frontend , 5 technologies".
+
+`/experience`'s "Career" eyebrow now carries the whole span beside it, derived
+through the same `companySpan` the entries use.
+
 ### Tech stacks
 
 `techStacks` in `src/lib/profile.ts` is the whole list, grouped by
@@ -147,7 +215,11 @@ second route exists.
 flagged `featured` — so the landing page's short list cannot name something the
 full page lacks. Add or drop an entry by moving a flag, never by editing the
 landing section. A group with no items is skipped rather than rendered as a bare
-heading, so emptying one removes it.
+heading, so emptying one removes it. **`techCount` is derived the same way** and
+is what the landing section's link says ("All 30 technologies") — the one thing
+a reader cannot tell from the short list is that it continues, and by how much.
+Deriving it means the link cannot quote a number the page it points at does not
+have.
 
 Item `name`s must match a `TECH_ICONS` key to get a logo. **Amazon Web Services
 and Microsoft Power Platform use marks inlined in `src/components/icons.tsx`** —
@@ -274,6 +346,20 @@ accessible name, and `display: none` would strip it from the accessibility tree
 and leave four unnamed links. Verified against the a11y tree: "Home",
 "Experience", "Stack", "Contact".
 
+**The active item is not identified by colour alone.** It was a `primary/10`
+tint plus a `primary` glyph — hue and nothing else, which is the one thing a
+navigation indicator may not rely on. It now carries an inset ring as well, so
+it has a shape: `inset-ring-1 inset-ring-primary/40`. **Tailwind v4 replaced the
+inset modifier with its own utility** — `ring-1 ring-inset` is not a class in
+v4, and it rendered as `box-shadow: none`. Inset rather than outset because the
+tiles sit `gap-1` apart and grow under magnification.
+
+**All six targets answer the press.** None of them had an `:active` state, so on
+a phone a tap gave nothing back until the page started moving — and tapping the
+section you were already on did nothing at all. `active:scale-90` with a 150ms
+ease-out; `:active` is the one press affordance that fires on touch. Measured:
+all six targets 40x40 with a transform transition.
+
 **A hairline separator splits navigation from the controls.** It is the shadcn
 `Separator`, and two of its classes are corrections rather than taste:
 
@@ -392,11 +478,43 @@ item, and hitting the page bottom would light up the *last* one.
   Measured across 16 widths from 320 to 1440: every row flush except ones that
   hold only the final chip.
 - **Tech logos go through `TechBadge`** (`src/components/tech-badge.tsx`), which
-  maps a tech name to a Simple Icons mark. Add new entries to `TECH_ICONS`, and
-  keep marks in `currentColor` so they stay legible in both themes.
+  maps a tech name to a Simple Icons mark. Add new entries to `TECH_ICONS`.
+  - **The mark rests at `muted-foreground` and blooms to its brand colour on
+    hover.** A step back from its own label at rest, so a chip reads as artwork
+    plus a name rather than one uniform grey block — and so the bloom has
+    somewhere to travel from. This is the only drawn artwork on an otherwise
+    entirely typographic site, and colour is how a reader recognises a stack
+    faster than they can read it; the neutral resting palette is what stops that
+    becoming logo soup.
+  - **The brand hex is re-lit, not used raw.** `Mark.hex` feeds `--brand`, and
+    the `brand-mark` utility in `globals.css` rewrites it as
+    `oklch(from var(--brand) clamp(var(--brand-l-min), l, var(--brand-l-max)) c h)`
+    — hue and chroma kept, lightness clamped into a per-theme band
+    (`0–0.62` light, `0.64–1` dark). A brand hex is fixed while the surface
+    under it flips: without the band, React's `#61DAFB` washes out on white and
+    anything dark vanishes on the dark canvas. Relative colour syntax is the
+    whole mechanism; where it is unsupported the declaration is invalid and the
+    mark stays in `currentColor`, which is its resting appearance anyway.
+    Measured lit: 3.29–18.97 light, 4.80–17.18 dark.
+  - **An achromatic brand goes to `foreground`, not through the band.**
+    Next.js and OpenJDK are both literally `#000000`; clamped they land on a mid
+    grey that in dark mode is *dimmer* than the resting `muted-foreground` — a
+    bloom running backwards (measured 6.94:1 at rest, 5.33:1 "lit"). `isNeutral`
+    catches those by channel spread and swaps in `text-foreground`, which
+    measures 18.97 light and 17.18 dark.
+  - **The chip box itself has no hover state.** `border-primary/40` is the
+    signal every genuinely clickable surface on this page uses, and a chip is
+    content, not a control — the same false affordance the landing page's
+    experience rows carried before they became links. Only the mark responds,
+    and a logo colouring in reads as the mark noticing you rather than as a
+    button. Nothing is gated behind it, so touch and keyboard lose no function.
   - **Unmapped names render text-only by design.** Simple Icons has dropped the
     whole Amazon and Microsoft families over trademark, so "Amazon Web Services"
-    and "Microsoft Power Platform" have no mark and are not going to get one.
+    and "Microsoft Power Platform" have no Simple Icons entry — both are inlined
+    in `src/components/icons.tsx` instead. Microsoft's carries no `hex`: its
+    four-square is four colours, and flattening it to any one of them would be
+    wrong rather than merely plain, so it does not bloom. OpenAI and Apidog have
+    no mark at all.
     Java's coffee cup is gone for the same reason — `siOpenjdk` stands in.
     Check the installed package before adding a key rather than guessing at an
     export name; roughly 3,450 icons ship and the misses are not obvious.
@@ -405,7 +523,7 @@ item, and hitting the page bottom would light up the *last* one.
 - **`TechBadge` carries `align-middle`, and it is not cosmetic.** `Badge` is
   `inline-flex`, so it aligns on *its own* baseline — which is its first flex
   item's: the `<svg>` for a mapped tech, the text run for an unmapped one. Those
-  differ by 2px, so a text-only badge (AWS) sits lower than its neighbours
+  differ by 2px, so a text-only badge (OpenAI) sits lower than its neighbours
   wherever badges are laid out inline. Middle alignment ignores the box's
   internal baseline and lines them all up.
 - **`Section`'s `title` is optional, and whichever line is visible is the
@@ -422,6 +540,16 @@ item, and hitting the page bottom would light up the *last* one.
   action beside the label instead of the title. Bottom-aligning is also wrong:
   the two have different descender depths, which leaves the smaller action text
   about 2.5px low.
+- **Hoverable surfaces all pick up `primary`, never a neutral.** The contact
+  cards hover to `border-primary/40`, and the landing page's experience rows do
+  too — they were the only ones going to `border-surface-border`, which read as
+  a different interaction from every other card on the page. The rule is about
+  *which* colour a control uses, not about what may hover: the tech chips used
+  to take `border-primary/40` and no longer do, because they are not controls. Measured: the hovered row border composites to
+  `#3d4e69` in dark and `#a4b0c4` in light. Note that every *blue* on the page
+  is already one colour — `--primary` and `--gradient-from` are the same value
+  in both themes, so the section links, the hero CTA and the dock's active item
+  all resolve to the same hex.
 - **The landing page's two-column role grid uses `items-baseline`.** The gutter
   is `text-sm` and the heading beside it is larger; grid's default aligns box
   tops, which leaves their text off by ~5px. Baseline alignment survives
@@ -480,6 +608,56 @@ wheel). Do not drift back toward those four.
 - **Do not "fix" that with `overflow-x` on `<body>`.** Overflow on the body
   propagates to the viewport when `<html>` is `visible`, so it clips nothing and
   merely hides the next such bug. Tried, measured, reverted.
+
+### The room's light
+
+`AmbientLight` (`src/components/ambient-light.tsx`) is one fixed layer behind
+every route: two washes in the site's own gradient stops, cross-faded against
+scroll depth, so the page is lit blue where you start reading and steel where
+you finish. Mounted in `layout.tsx` at `-z-20`, behind `MarginTexture`'s
+`-z-10`.
+
+It exists because **everything below the hero had no atmosphere at all**.
+`/experience` and `/tech-stack` each carried a copy of the hero's wash "so the
+routes read as one site" — which is what a shared layer does properly. Those two
+copies are gone; the hero keeps its own glow, which is the focal moment and
+arrives with the name sweep.
+
+- **Radial gradients, not blurred elements.** A `blur-3xl` div re-rasterises its
+  filter whenever anything about it changes; a `radial-gradient` is painted once
+  and then only composited. This animates on every scroll frame, so that is the
+  whole performance budget. Verified: `filter: none` on both layers, and the
+  only animated properties are `opacity` and `translate`.
+- **Scroll-driven, so nothing runs at rest.** There is no loop to pause when the
+  tab is hidden and no frame is spent until the reader moves. Measured
+  0 → 0.5 → 1: warm 1 → 0.6 → 0.2, cool 0 → 0.5 → 1.
+- **`fixed` with `overflow-hidden`.** Same reasoning as `MarginTexture`: no
+  relationship to document height, cannot lengthen the page, cannot create the
+  horizontal overflow decorative layers here have caused twice. Verified across
+  scroll on desktop and mobile — document height unchanged, `scrollWidth` equal
+  to `clientWidth` throughout.
+- **Guarded twice, in opposite directions.** `@supports (animation-timeline:
+  scroll())` keeps Firefox on the resting state rather than a half-applied one;
+  the reduced-motion guard drops the traverse. Both land on warm at full and
+  cool at zero — the single blue wash the routes had before — so neither
+  failure mode is an absence of design. Verified under emulated `reduce`: both
+  layers pinned at rest across all scroll positions.
+
+**Light mode's wash is far weaker than dark's, and that is measured rather than
+taste.** A wash over a white canvas only subtracts luminance, and
+`--muted-foreground` starts at 4.74:1 there — about a quarter of a point above
+AA. Swept: at 18% (what `--glow` is) muted text over the wash measures 3.74:1;
+at 8% it is 4.30; even a tint pale enough to be invisible (`#ecf7ff`) only
+reaches 4.36. **There is no alpha at which a perceptible light-mode wash clears
+4.5 behind that token.**
+
+So 8%/7% is a compromise, not a solution — it is visible, and it is better than
+the 18% wash the hero glow and both route washes were already putting behind
+muted text before this existed. **The durable fix is to give
+`--muted-foreground` headroom in light mode**, which would re-baseline every
+contrast figure in these notes and is not a change to make in passing. Dark has
+no such problem: a wash on a near-black canvas adds light rather than removing
+it, and muted measures 5.88:1 and 5.63:1 over these.
 
 ### Filling the side margins
 
@@ -561,6 +739,54 @@ the paragraph is two stacked layers:
   none`; with `no-preference` the reverse.
 - `duration={18}` (ms per character). The component's default of 100 would spend
   17 seconds on a 171-character sentence.
+
+### The hero arrives as one gesture
+
+Three overlapping beats, all derived from `--sweep`, which `page.tsx` sets on
+the `<header>` from `NAME_SWEEP_SECONDS`:
+
+| Beat | Runs | Driven by |
+|---|---|---|
+| Name sweeps | 0 → 1.2s | `DiaTextReveal` (JS) |
+| Glow arrives | 0 → 1.2s | `[data-hero-glow]`, CSS |
+| Role line wipes in | 0.78 → 1.33s | `[data-hero-role]`, CSS |
+| Summary types | 1.4s → | `TypingAnimation` (JS) |
+
+Measured on the production build, both themes: role clip holds at `inset(0 100%
+0 0)` until ~780ms and reaches 0% by 1.5s; the first typed character lands
+between 1500 and 1800ms. The name-then-summary order is intact.
+
+- **The glow moves only LEFT of where it rests, and rests where it always did.**
+  It travels `-45% → 0` with the band, so the sweep reads as a light passing
+  over the name rather than a gradient trick. Overflow to the left is free in
+  LTR; overflow right is what creates a horizontal scrollbar, and this glow has
+  caused that before. Verified 1280/1280 and 390/390 throughout the animation.
+- **The role wipe overlaps the sweep's tail rather than queueing behind it**
+  (`calc(var(--sweep) * 0.65)` delay, `* 0.46` duration), so the two read as one
+  motion travelling down the page without lengthening the load.
+- **Their from-states live only inside `@media (prefers-reduced-motion:
+  no-preference)`**, for the same reason `[data-rise]` has its `@supports`
+  guard: a bare `clip-path: inset(0 100% 0 0)` would hide the role line outright
+  wherever the animation does not apply. The global reduced-motion rule
+  collapses `animation-duration` but **not** `animation-delay`, so an unguarded
+  version would leave the role line clipped for 780ms and then snap in.
+
+### The name must not depend on JavaScript
+
+**`sweepPos` is seeded at `SWEEP_END`, not `SWEEP_START`.** `buildGradient`
+returns a flat two-stop of `textColor` once the band has passed and a fully
+transparent fill before it arrives — and this is `background-clip: text` over
+`color: transparent`, so the start value renders the `<h1>` **invisible**.
+
+That was shipping: the server HTML carried
+`linear-gradient(90deg, … transparent 0.00%, transparent 100%)`, so the name did
+not exist until React hydrated and motion ran. Seeding the end state makes the
+sweep a pure enhancement — the built HTML now carries
+`linear-gradient(90deg, var(--foreground), var(--foreground))` — and `play()`
+sets `SWEEP_START` itself before animating, so the animation is unchanged.
+
+This is a **fourth owned edit** to `dia-text-reveal.tsx`; re-running
+`shadcn add @magicui/dia-text-reveal` overwrites it along with the other three.
 
 ### Both generated files needed React 19 fixes
 
@@ -678,6 +904,25 @@ npx shadcn@latest add @magicui/animated-theme-toggler   # @magicui is in compone
   per theme in `globals.css`) — not a raw palette class. Its ping is decorative;
   the adjacent text carries the meaning, and the global reduced-motion rule
   stops it.
+- **The email card holds two controls, so it is a `<li>`, not an `<a>`.** The
+  address opens a mail client; the button beside it puts the address on the
+  clipboard, which is what a recruiter on a machine with no mail client actually
+  wants. A `<button>` inside an `<a>` is invalid, so the anchor covers the card
+  with `after:absolute after:inset-0` and the copy button sits above that
+  overlay on `z-10` — verified by hit-testing the button's centre. The focus
+  ring moves back onto the card with `has-[a:focus-visible]`, or it would wrap
+  the address alone.
+- **`CopyEmail` is the only client component outside `site-header.tsx`**, and it
+  earns it: `navigator.clipboard` is a browser API. Its confirmation is
+  announced, not just drawn — the icon swap is invisible to a screen reader, so
+  a `role="status"` region says it. If the write rejects (it needs a secure
+  context) nothing is claimed and the label stays "Copy". Verified end to end:
+  the clipboard really holds the address.
+- **The footer carries contact links again, but as links, not an id.** `/` has
+  `ContactSection` directly above it, so there it repeats — but `/experience`
+  and `/tech-stack` have no contact anywhere on the page, and a reader who has
+  just finished five roles is exactly the one who might write. The dock's mail
+  icon does reach `/#contact` from there; this is one step where that is two.
 - The footer carries `id="contact"` because the nav's "Contact us" item points
   there. If you add a dedicated contact section back, move that id to it.
 - **The hero's top padding is asymmetric on purpose** (`pt-12 sm:pt-16` against

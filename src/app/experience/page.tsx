@@ -3,12 +3,7 @@ import type { Metadata } from "next";
 import { DateRange, Duration } from "@/components/duration";
 import { SiteFooter } from "@/components/site-footer";
 import { TechBadge } from "@/components/tech-badge";
-import {
-  companySpan,
-  companyTypes,
-  experience,
-  profile,
-} from "@/lib/profile";
+import { companySpan, companyTypes, experience, profile } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -42,30 +37,48 @@ export const revalidate = 86400;
  * shareable deep link.
  */
 export default function ExperiencePage() {
+  // Entries are newest first, so the career opens with the *last* one's start
+  // and runs to the first one's end.
+  const careerSpan = {
+    start: companySpan(experience[experience.length - 1]).start,
+    end: companySpan(experience[0]).end,
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-6">
       <main
         id="main"
         className="relative isolate flex flex-col gap-8 pt-12 pb-20 sm:pt-16 sm:pb-28"
       >
-        {/* Same wash as the landing hero, so the routes read as one site. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-24 -left-24 -z-10 size-[26rem] rounded-full bg-glow blur-3xl"
-        />
         {/* The eyebrow doubles as the page's <h1>. It is the only heading
             left after the title and intro were dropped, and a page with no
             h1 leaves the document outline headless — the company <h2>s would
-            hang off nothing. Styled as a label, so it reads as one. */}
-        <h1 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-          Career
-        </h1>
+            hang off nothing. Styled as a label, so it reads as one.
+
+            It now carries the whole career span beside it. This is the detail
+            page, so unlike the landing list there is nothing to hold back, and
+            the one thing a reader wants before reading five roles is how long
+            the whole thing runs. Derived through the same `companySpan` the
+            entries use, so it cannot drift from them. */}
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+            Career
+          </h1>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            <DateRange start={careerSpan.start} end={careerSpan.end} />
+            {" · "}
+            <Duration
+              start={careerSpan.start}
+              end={careerSpan.end}
+              shown="range"
+            />
+          </p>
+        </div>
 
         {/* No gap between entries: the rail has to run unbroken from one dot to
             the next, and a gap would leave gaps in the line. Spacing comes from
             each entry's own bottom padding instead. */}
-        <ol data-rise
-          className="flex flex-col">
+        <ol data-rise className="flex flex-col">
           {experience.map((entry, index) => {
             const span = companySpan(entry);
             const isLast = index === experience.length - 1;
@@ -84,7 +97,10 @@ export default function ExperiencePage() {
                       starts at the node instead of a stub. Retune if `text-lg`
                       on that heading changes. */}
                   <span
-                    className={cn("h-[8px] w-px shrink-0", index > 0 && "bg-border")}
+                    className={cn(
+                      "h-[8px] w-px shrink-0",
+                      index > 0 && "bg-border",
+                    )}
                   />
                   {/* Hollow ring for a role you have left, filled with a soft
                       halo for the one you are in — so the eye lands on where
@@ -105,8 +121,12 @@ export default function ExperiencePage() {
                 {/* min-w-0 so long words in the body can wrap instead of
                     forcing the flex row wider than the page. */}
                 <div className={cn("min-w-0 flex-1", !isLast && "pb-12")}>
+                  {/* `data-target-flash`: arriving here from a landing-page row
+                      pulses this entry once, so the deep link says which
+                      company it brought you to. See `globals.css`. */}
                   <article
                     id={entry.slug}
+                    data-target-flash
                     aria-labelledby={`${entry.slug}-heading`}
                     className="flex scroll-mt-32 flex-col gap-6"
                   >
@@ -143,8 +163,7 @@ export default function ExperiencePage() {
                         the list, the dot offset drawn as rail rather than
                         margin, and no trailing line on the last role. A single
                         role has nothing to connect to, so it gets no rail. */}
-                    <ol data-rise
-          className="flex flex-col">
+                    <ol data-rise className="flex flex-col">
                       {entry.roles.map((role, roleIndex) => {
                         const nested = entry.roles.length > 1;
                         const isLastRole = roleIndex === entry.roles.length - 1;

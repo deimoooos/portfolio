@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Section } from "@/components/section";
 import { TechBadge } from "@/components/tech-badge";
-import { featuredTech } from "@/lib/profile";
+import { featuredTech, techCount } from "@/lib/profile";
 
 /**
  * The short list: only what you would lead with.
@@ -24,7 +24,11 @@ export function TechStackSection() {
           href="/tech-stack"
           className="group inline-flex w-fit shrink-0 items-center gap-2 rounded-sm text-sm font-medium text-primary underline-offset-4 transition-colors duration-200 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
-          View more
+          {/* The count is derived from `techStacks`, so this link cannot
+              quote a number the page it points at does not have. It is the one
+              thing the reader cannot see from here: that the list continues,
+              and by how much. */}
+          All {techCount} technologies
           <ArrowRight
             aria-hidden="true"
             className="size-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
@@ -66,7 +70,6 @@ export function TechStackSection() {
           </li>
         ))}
       </ul>
-
     </Section>
   );
 }

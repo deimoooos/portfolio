@@ -45,6 +45,8 @@
   --color-gradient-from: var(--gradient-from);
   --color-gradient-to: var(--gradient-to);
   --color-glow: var(--glow);
+  --color-glow-from: var(--glow-from);
+  --color-glow-to: var(--glow-to);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -54,11 +56,13 @@
   --radius-4xl: calc(var(--radius) * 2.6);
   --animate-blink-cursor: blink-cursor 1.2s step-end infinite;
   @keyframes blink-cursor {
-  0%, 49% {
-    opacity: 1;
+    0%,
+    49% {
+      opacity: 1;
     }
-  50%, 100% {
-    opacity: 0;
+    50%,
+    100% {
+      opacity: 0;
     }
   }
 }
@@ -110,6 +114,41 @@
   /* Soft radial behind the hero and section markers. */
   --glow: oklch(0.55 0.13 259.24 / 18%);
 
+  /*
+   * The ambient layer's two washes. Same hues as `--gradient-from` and
+   * `--gradient-to`, so the light in the room is the site's own gradient rather
+   * than a third colour scheme.
+   *
+   * MUCH weaker than `--glow` here, and that asymmetry is measured rather than
+   * taste. A wash over a white canvas only ever subtracts luminance, and
+   * `--muted-foreground` starts at 4.74:1 on this background — about a quarter
+   * of a point above AA. Swept: at 18% (what `--glow` is) muted text over the
+   * wash measures 3.74:1; at 8% it is 4.30; even a tint pale enough to be
+   * invisible (#ecf7ff) only reaches 4.36. There is no alpha at which a
+   * perceptible light-mode wash clears 4.5 behind that token.
+   *
+   * 8% is therefore the compromise, not the answer: it is visible, and it is a
+   * real improvement on the 18% wash the hero and both detail routes already
+   * put behind muted text today. The actual fix is to give
+   * `--muted-foreground` some headroom, which re-baselines every contrast
+   * figure in this file's notes and is not a call to make in passing.
+   *
+   * Dark has no such problem — a wash on a near-black canvas adds light rather
+   * than removing it, and muted text measures 5.88:1 and 5.63:1 over these.
+   */
+  --glow-from: oklch(0.6 0.14 259.24 / 8%);
+  --glow-to: oklch(0.65 0.13 225 / 7%);
+
+  /*
+   * Lightness band a brand mark is re-lit into on hover (see `brand-mark`).
+   * A brand hex is fixed while the surface under it flips, so it needs a
+   * ceiling here and a floor in dark — otherwise Next.js's #000000 is
+   * invisible on the dark canvas and React's #61DAFB washes out on the light
+   * one. Only the bound that matters per theme is set; the other is inert.
+   */
+  --brand-l-min: 0;
+  --brand-l-max: 0.62;
+
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -145,6 +184,10 @@
   --gradient-from: oklch(0.766 0.108 259.79);
   --gradient-to: oklch(0.83 0.098 225);
   --glow: oklch(0.65 0.12 259.79 / 22%);
+  --glow-from: oklch(0.65 0.12 259.79 / 22%);
+  --glow-to: oklch(0.72 0.11 225 / 20%);
+  --brand-l-min: 0.64;
+  --brand-l-max: 1;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -158,6 +201,22 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+/*
+ * A tech mark lit in its own brand colour.
+ *
+ * `TechBadge` sets `--brand` from the mark's own hex; this relights it into the
+ * theme's legible band, keeping the hue and chroma so it still reads as that
+ * brand. Relative colour syntax is the whole mechanism, and where it is not
+ * supported the declaration is invalid and the mark simply stays in
+ * `currentColor` — which is what it looks like at rest anyway, so the failure
+ * is the resting state rather than a broken one.
+ */
+@utility brand-mark {
+  color: oklch(
+    from var(--brand) clamp(var(--brand-l-min), l, var(--brand-l-max)) c h
+  );
 }
 
 @layer base {
@@ -226,6 +285,153 @@
        */
       animation-range: entry 0% entry 100%;
     }
+  }
+}
+
+/*
+ * The room's light traverses the site's gradient as you read.
+ *
+ * Scroll-driven, so **nothing runs at rest** — there is no loop here to pause
+ * when the tab is hidden, and no frame is spent until the reader moves. The
+ * only animated properties are `opacity` and `translate`, both composited; the
+ * washes themselves are radial gradients rather than blurred elements, so no
+ * filter is re-rasterised.
+ *
+ * Guarded twice over, and the guards matter in opposite directions: the
+ * `@supports` block is what keeps Firefox (no scroll timelines) on the resting
+ * state instead of a half-applied one, and the reduced-motion block drops the
+ * traverse for anyone who asked for less movement. Both fall back to warm at
+ * full strength and cool at zero — the single blue wash these routes had
+ * before — so neither failure mode is an absence of design.
+ *
+ * The drift is deliberately small (3vh against a viewport). This is the light
+ * in the room shifting, not a parallax layer sliding past; anything larger
+ * reads as the background being animated, which is the thing it must not do.
+ */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes ambient-warm {
+      to {
+        opacity: 0.2;
+        translate: 0 -3vh;
+      }
+    }
+
+    @keyframes ambient-cool {
+      to {
+        opacity: 1;
+        translate: 0 -2vh;
+      }
+    }
+
+    [data-ambient="warm"] {
+      animation: ambient-warm linear both;
+      animation-timeline: scroll(root block);
+    }
+
+    [data-ambient="cool"] {
+      animation: ambient-cool linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+/*
+ * An entry acknowledges that you asked for it.
+ *
+ * The landing page's experience rows deep-link to `/experience#slug`, and
+ * `/tech-stack`'s group index links to each group — but arriving at an anchor
+ * is silent: `scroll-mt-32` parks it near the top and nothing says which of the
+ * things now on screen you actually asked for. This gives it one soft pulse and
+ * gets out of the way.
+ *
+ * `box-shadow`, not padding or a margin — it adds no layout at all, so it
+ * cannot disturb the timeline rail's dot arithmetic, which is measured against
+ * the heading's first line. The delay lets the smooth scroll land first.
+ *
+ * The whole thing is motion, so it lives inside the reduced-motion guard;
+ * without it there is no pulse, and `scroll-mt-32` parking the entry at the top
+ * of the viewport is the acknowledgement.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes target-arrive {
+    from {
+      box-shadow: 0 0 0 0.75rem var(--glow);
+      background-color: var(--glow);
+    }
+    to {
+      box-shadow: 0 0 0 0.75rem transparent;
+      background-color: transparent;
+    }
+  }
+
+  [data-target-flash]:target {
+    border-radius: var(--radius-lg);
+    animation: target-arrive 2.2s 0.35s both cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/*
+ * The hero arrives as one gesture, in three overlapping beats: the name sweeps,
+ * the role line fills in behind the sweep's tail, and only then does the
+ * summary type. All of it is derived from `--sweep`, which `page.tsx` sets from
+ * `NAME_SWEEP_SECONDS` — retime the sweep and these follow rather than drifting
+ * out of step with it.
+ *
+ * THE FROM-STATES LIVE ONLY INSIDE THE REDUCED-MOTION GUARD, for the same
+ * reason the `[data-rise]` block has its `@supports` guard: `clip-path: inset(0
+ * 100% 0 0)` outside it would hide the role line outright wherever the
+ * animation does not apply. The global `prefers-reduced-motion` rule collapses
+ * durations but NOT delays, so a bare version of this would leave the role line
+ * clipped for the length of the delay and then snap in.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes hero-role-wipe {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  /*
+   * Starts at 65% of the sweep and lands at ~111% of it — overlapping the
+   * sweep's tail rather than queueing behind it, so the two read as one motion
+   * travelling down the page. It still finishes before `SUMMARY_START_MS`,
+   * which is what keeps the name-then-summary order intact.
+   */
+  [data-hero-role] {
+    animation: hero-role-wipe calc(var(--sweep) * 0.46)
+      calc(var(--sweep) * 0.65) both cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /*
+   * The wash arrives with the band, so the sweep reads as a light passing over
+   * the name rather than a gradient trick — the hero's one atmospheric element
+   * finally has something to do. `cubic-bezier(0.65, 0, 0.35, 1)` is the
+   * easeInOutCubic that `DiaTextReveal` runs its sweep on, so the two travel
+   * together.
+   *
+   * It only ever moves LEFT of where it rests, and rests exactly where it did
+   * before. Overflow to the left costs nothing in LTR; overflow to the right is
+   * what creates a horizontal scrollbar, and this glow has caused that before.
+   */
+  @keyframes hero-glow-arrive {
+    from {
+      opacity: 0;
+      translate: -45% 0;
+      scale: 0.85;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+      scale: 1;
+    }
+  }
+
+  [data-hero-glow] {
+    animation: hero-glow-arrive var(--sweep) both cubic-bezier(0.65, 0, 0.35, 1);
   }
 }
 

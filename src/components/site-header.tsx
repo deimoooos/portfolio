@@ -149,7 +149,8 @@ function useActiveSection(enabled: boolean) {
       // while the reader is looking at the top.
       const scrollable = doc.scrollHeight > window.innerHeight + 4;
       const bottomedOut =
-        scrollable && window.innerHeight + window.scrollY >= doc.scrollHeight - 2;
+        scrollable &&
+        window.innerHeight + window.scrollY >= doc.scrollHeight - 2;
 
       if (bottomedOut) {
         setActive(requested.current ?? NAV_ITEMS[NAV_ITEMS.length - 1].id);
@@ -297,7 +298,18 @@ export function SiteHeader() {
                 // hit area in a 40px target.
                 "relative transition-colors duration-200",
                 isActive
-                  ? "bg-primary/10 text-primary"
+                  ? // The ring is not decoration. Before it, "you are here" was
+                    // carried by colour alone — a `primary/10` tint and a
+                    // `primary` glyph — which is the one thing a navigation
+                    // indicator may not rely on. The ring gives it a shape as
+                    // well as a hue, and it is what actually makes the active
+                    // item findable at a glance in a row of six circles.
+                    // `inset-ring-*`, not `ring-1 ring-inset`: Tailwind v4 replaced
+                    // the inset modifier with its own utility, so `ring-inset`
+                    // is simply not a class and the ring rendered as `none`.
+                    // Inset rather than outset because the tiles sit `gap-1`
+                    // apart and grow under magnification.
+                    "bg-primary/12 text-primary inset-ring-1 inset-ring-primary/40"
                   : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
               )}
             >
@@ -311,7 +323,13 @@ export function SiteHeader() {
                 onClick={() => request(item.id)}
                 aria-current={isActive ? "location" : undefined}
                 title={item.label}
-                className="absolute inset-0 flex items-center justify-center rounded-full focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                // A dock should answer the press, not just the result. None of
+                // these six targets had an `:active` state, so on a phone a tap
+                // gave nothing back until the page started moving — and if you
+                // tapped the section you were already on, nothing happened at
+                // all. `active:` fires on touch, so this is the one press
+                // affordance that works there.
+                className="absolute inset-0 flex items-center justify-center rounded-full transition-transform duration-150 ease-out active:scale-90 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
               >
                 {/* Half the circle, so the glyph grows with the magnification
                     instead of sitting at a fixed size inside a growing tile. */}
@@ -364,6 +382,7 @@ export function SiteHeader() {
               // Covers and scales with the magnifying box; the cva above sizes
               // to a fixed `size-9`, which would not.
               "absolute inset-0 size-auto rounded-full [&_svg]:size-1/2",
+              "transition-transform duration-150 ease-out active:scale-90",
             )}
           />
         </DockIcon>
@@ -377,7 +396,7 @@ export function SiteHeader() {
             variant="ghost"
             size="icon"
             asChild
-            className="absolute inset-0 size-auto rounded-full"
+            className="absolute inset-0 size-auto rounded-full transition-transform duration-150 ease-out active:scale-90"
           >
             <a
               href={profile.socials.linkedin}
