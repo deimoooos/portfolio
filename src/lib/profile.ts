@@ -7,7 +7,7 @@
 export const profile = {
   name: "Rosendo Coquilla Jr",
   role: "Full-stack Software Engineer",
-  available: true,
+  available: false,
   summary:
     "I’m Sen, a Full-Stack Software Engineer and an architecture enthusiast with a strong passion for designing secure, robust, and reliable system architectures and platforms.",
   email: "rosendocoquilla@gmail.com",
