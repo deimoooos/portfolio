@@ -29,8 +29,43 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploying
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Commit everything and push to a Git remote (GitHub, GitLab or Bitbucket).
+2. At [vercel.com/new](https://vercel.com/new), import the repository.
+3. Leave the defaults: Vercel detects Next.js, and `yarn build` / `.next` are
+   already correct. There are no environment variables to set.
+4. Check **Settings → General → Node.js Version** is 22.x or newer. Vercel takes
+   the version from that setting, not from `.nvmrc` — that file is only for
+   `nvm use` locally.
+5. Deploy. Every later push to the default branch redeploys; pushes to other
+   branches get preview URLs.
+
+**Do not add `output: "standalone"` back unconditionally.** That makes
+`next build` assemble `.next/standalone` from the server's file-tracing
+manifest, and on Vercel the build fails inside `next build` with:
+
+```
+Error: ENOENT: no such file or directory, open '/vercel/path0/.next/next-server.js.nft.json'
+```
+
+Vercel traces and packages the output itself and has no use for that directory.
+`next.config.ts` now switches it on only when `BUILD_STANDALONE=1`, which is set
+in the Dockerfile and nowhere else.
+
+Note that `/`, `/experience` and `/tech-stack` build as ISR with a one-day
+revalidate rather than fully static, because a current role's duration is
+computed at render time.
+
+### Docker
+
+```bash
+docker build -t portfolio .          # sets BUILD_STANDALONE=1 internally
+docker run --rm -p 3000:3000 portfolio
+```
+
+The runner stage copies `.next/standalone`, so the image only works if the
+builder stage set `BUILD_STANDALONE=1`. If you ever move the build out of the
+Dockerfile, that variable has to move with it.

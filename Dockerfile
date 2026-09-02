@@ -12,6 +12,9 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Opts this build into `output: "standalone"` — see next.config.ts. Without it
+# the runner stage below has no .next/standalone to copy.
+ENV BUILD_STANDALONE=1
 RUN yarn build
 
 # ---- runner: minimal image, only the standalone server ----------------------

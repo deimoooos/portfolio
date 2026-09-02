@@ -33,9 +33,32 @@ npx tsc --noEmit        # typecheck (no `typecheck` script exists)
 
 npx shadcn@latest add <component>   # Yarn 1 has no `dlx` — use npx
 
+BUILD_STANDALONE=1 yarn build   # what the Dockerfile runs; adds .next/standalone
+
 docker build -t portfolio .
 docker run --rm -p 3000:3000 portfolio
 ```
+
+## Deployment
+
+**`output: "standalone"` is opt-in, gated on `BUILD_STANDALONE=1`, and the
+Dockerfile is the only thing that sets it.** It used to be unconditional, which
+broke deploying to Vercel: that option makes `next build` run an extra step that
+assembles `.next/standalone` from `.next/next-server.js.nft.json`, and on Vercel
+the build died *inside* `next build` with `ENOENT` on that manifest. Vercel
+traces and packages the output itself and has no use for the directory. The
+Dockerfile's runner stage does, so it sets the variable in its builder stage —
+move the build elsewhere and the variable has to move with it. Verified both
+ways: the default build produces the manifest and no `standalone/`; with the
+variable set, `.next/standalone/server.js` exists and the image serves all three
+routes.
+
+**Vercel does not read `.nvmrc`.** It takes the Node version from Project
+Settings, so the 24.18.0 pin is a local convenience only.
+
+**`shadcn` belongs in `devDependencies`.** It is a CLI invoked through `npx`
+(which fetches its own copy) and nothing imports it; in `dependencies` it shipped
+to production for no reason.
 
 ## Layout
 
