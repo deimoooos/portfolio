@@ -108,7 +108,7 @@ export default function ExperiencePage() {
                   <article
                     id={entry.slug}
                     aria-labelledby={`${entry.slug}-heading`}
-                    className="flex scroll-mt-28 flex-col gap-6"
+                    className="flex scroll-mt-32 flex-col gap-6"
                   >
                     {/* The heading stays the first thing in this column: the
                         rail's dot offset is measured against its first line. */}

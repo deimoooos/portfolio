@@ -29,10 +29,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-            {/* pt-16 reserves the 64px the floating dock no longer takes in flow —
-          exactly what the sticky bar used to occupy, so each page's own top
-          padding keeps meaning what it meant. */}
-      <body className="flex min-h-full flex-col pt-16">
+      {/* pt-20 reserves the 80px the floating dock no longer takes in flow: it
+          is `top-4` plus the Dock's own 58px height, rounded up to the spacing
+          scale. Derived from the dock like `ACTIVATION_LINE` and the sections'
+          `scroll-mt-32` — move the dock and all three move. */}
+      <body className="flex min-h-full flex-col pt-20">
         {/* Keyboard users can jump the nav; visible only once focused. */}
         <a
           href="#main"

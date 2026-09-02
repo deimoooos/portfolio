@@ -41,7 +41,7 @@ export default function Home() {
         {/* ---- Hero: typographic, no photo -------------------------------- */}
         <header
           id="top"
-          className="relative isolate flex scroll-mt-28 flex-col gap-7"
+          className="relative isolate flex scroll-mt-32 flex-col gap-7"
         >
           {/* Decorative wash behind the name. `isolate` keeps the negative
               z-index inside this header instead of sliding under the page. */}

@@ -28,7 +28,7 @@ export function Section({
     "text-xs font-medium tracking-widest text-muted-foreground uppercase";
 
   return (
-    <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-28">
+    <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-32">
       <div className="mb-8 flex flex-col gap-1.5">
         {hasTitle && <p className={eyebrow}>{label}</p>}
 

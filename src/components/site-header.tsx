@@ -15,6 +15,7 @@ import {
 import { LinkedInIcon } from "@/components/icons";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Dock, DockIcon } from "@/components/ui/dock";
 import { Separator } from "@/components/ui/separator";
 import { NAV_ITEMS } from "@/lib/nav";
 import { profile } from "@/lib/profile";
@@ -23,7 +24,7 @@ import { cn } from "@/lib/utils";
 /**
  * The y-position a section's top must cross to count as "current".
  *
- * Sections carry `scroll-mt-28` (112px), so an anchor jump parks their top
+ * Sections carry `scroll-mt-32` (128px), so an anchor jump parks their top
  * around there. The line has to sit just below that, or a section you jumped
  * straight to would never register as active.
  *
@@ -33,7 +34,7 @@ import { cn } from "@/lib/utils";
  * ran 66-83px against an 80px margin — the error is why the margin now clears
  * the dock by more than the error is wide.
  */
-const ACTIVATION_LINE = 120;
+const ACTIVATION_LINE = 136;
 
 /**
  * One icon per nav id. Kept here rather than on `NAV_ITEMS` so `nav.ts` stays a
@@ -212,23 +213,6 @@ function useActiveSection(enabled: boolean) {
   return [active, request] as const;
 }
 
-function navLinkClass(isActive: boolean) {
-  return cn(
-    "flex flex-col items-center justify-center gap-1 rounded-full transition-colors duration-200",
-    // Icon-only on mobile at the same 32px as the toggle beside it; icon over
-    // label from `sm` up. Both stay inside the dock's 48px, so its bottom edge
-    // remains at 64px, which is what the sections' scroll margin is derived from.
-    "size-8 sm:size-auto sm:px-3 sm:py-1.5",
-    "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-    // Filled pill rather than an underline — an underline reads as a stray line
-    // inside a rounded dock. Weight changes with it, so colour is never the
-    // only signal.
-    isActive
-      ? "bg-primary/10 font-medium text-primary"
-      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
-  );
-}
-
 export function SiteHeader() {
   const pathname = usePathname();
   const onLanding = pathname === "/";
@@ -247,129 +231,166 @@ export function SiteHeader() {
 
   return (
     /*
-     * A floating dock rather than a full-width bar.
+     * Magic UI's `Dock` — a magnifying macOS-style dock — in place of the
+     * hand-rolled pill.
      *
-     * `top-4` + `h-12` puts its bottom edge at 64px — deliberately the same as
-     * the bar it replaced. `ACTIVATION_LINE` (120) and the sections'
-     * `scroll-mt-28` (112px) are both derived from that edge, so moving the dock
-     * means re-deriving both.
+     * `top-4` + `h-16` puts the bottom edge at **80px**, not the 64px the old
+     * pill sat at. `ACTIVATION_LINE` (136), the sections' `scroll-mt-32`
+     * (128px) and `body`'s `pt-20` (80px) are all derived from that edge —
+     * change the dock's height and all three have to move with it.
      *
-     * The wrapper spans the viewport only to centre the pill, so it must not
-     * eat clicks: `pointer-events-none` here, restored on the pill itself.
+     * The wrapper spans the viewport only to centre the dock, so it must not
+     * eat clicks: `pointer-events-none` here, restored on the dock itself.
      */
     <header
       data-site-header
       className="pointer-events-none fixed inset-x-0 top-4 z-40 flex justify-center px-4"
     >
-      <div
+      <Dock
+        /* `Dock` renders a plain motion.div, so the <nav> landmark the pill had
+           has to come from these. Without it the four section links sit in no
+           landmark at all, and "skip to navigation" has nothing to find. The
+           theme toggle and LinkedIn link live inside it too, which is a slight
+           stretch of the role but better than dropping the landmark. */
+        role="navigation"
+        aria-label="Main"
+        direction="middle"
+        iconSize={40}
+        // 48, not Magic UI's 60: the dock is `h-16` with `p-2`, so 48px is
+        // exactly the content box. At their default the magnified tile is 60px
+        // in a 42px box and spills through the top and bottom edges — which
+        // reads as intended on a macOS dock at the bottom of the screen, and as
+        // broken on one pinned to the top.
+        iconMagnification={48}
+        iconDistance={120}
         className={cn(
-          "pointer-events-auto flex h-12 max-w-full items-center gap-0.5 rounded-full border px-2",
-          // `border-foreground/…`: a crisper edge than `--surface-border`, and
-          // it flips with the theme like the shadow below does.
-          "border-foreground/10 backdrop-blur-xl sm:gap-1",
-          "transition-[background-color,box-shadow] duration-300",
+          // `mt-0` cancels the component's own `mt-8`, which would drop the
+          // dock 32px below where `top-4` puts it.
+          // `h-16` over the component's `h-[58px]`: see `iconMagnification`.
+          // It also puts the bottom edge on exactly the 80px `body` reserves.
+          "pointer-events-auto mt-0 h-16 max-w-full gap-1 rounded-full border p-2",
           /*
-           * `shadow-foreground/…` rather than a fixed black: `--foreground` is
-           * near-black in light and near-white in dark, so the same class casts
-           * a drop shadow on light and a soft halo on dark. A black shadow is
-           * invisible against the dark canvas, which is what made this read
-           * flat before.
+           * Magic UI's own fill is `bg-white/10` / `dark:bg-black/10` — raw
+           * palette colours, which this project does not use, and nearly
+           * invisible in light mode. Same surface, border and shadow treatment
+           * as the pill it replaces: `shadow-foreground/…` rather than a fixed
+           * black, because `--foreground` flips per theme, so one class casts a
+           * drop shadow on light and a soft halo on dark.
            */
+          "border-foreground/10 backdrop-blur-xl",
+          "transition-[background-color,box-shadow] duration-300",
           hasScrolled
             ? "bg-surface/95 shadow-2xl shadow-foreground/20"
             : "bg-surface/90 shadow-xl shadow-foreground/15",
         )}
       >
-        {/* Sections */}
-        <nav aria-label="Main">
-          <ul className="flex items-center gap-0.5 sm:gap-1">
-            {NAV_ITEMS.map((item) => {
-              const isActive = active === item.id;
-              const Icon = NAV_ICONS[item.id];
-              return (
-                <li key={item.id}>
-                  {/* Rooted at `/`, not a bare `#id`: from a sub-route a bare
-                      fragment would resolve against that route and go nowhere. */}
-                  <Link
-                    href={`/#${item.id}`}
-                    // The dock's own tie-break at the page foot; see
-                    // `useActiveSection`. Navigation is the Link's job, not
-                    // this handler's.
-                    onClick={() => request(item.id)}
-                    aria-current={isActive ? "location" : undefined}
-                    className={navLinkClass(isActive)}
-                  >
-                    {Icon && (
-                      <Icon aria-hidden="true" className="size-4 shrink-0" />
-                    )}
-                    {/* `sr-only`, NOT `hidden`: on mobile the label is the
-                        link's only accessible name, and `display: none` would
-                        remove it from the tree entirely. */}
-                    <span className="sr-only text-[0.6875rem] leading-none sm:not-sr-only">
-                      {item.label}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+        {NAV_ITEMS.map((item) => {
+          const isActive = active === item.id;
+          const Icon = NAV_ICONS[item.id];
+          return (
+            <DockIcon
+              key={item.id}
+              className={cn(
+                // `relative` so the link below can cover the whole circle.
+                // `DockIcon` applies its padding as an inline style, which no
+                // class can override, and a link confined inside it had a 24px
+                // hit area in a 40px target.
+                "relative transition-colors duration-200",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+              )}
+            >
+              {/* Rooted at `/`, not a bare `#id`: from a sub-route a bare
+                  fragment would resolve against that route and go nowhere. */}
+              <Link
+                href={`/#${item.id}`}
+                // The dock's own tie-break at the page foot; see
+                // `useActiveSection`. Navigation is the Link's job, not
+                // this handler's.
+                onClick={() => request(item.id)}
+                aria-current={isActive ? "location" : undefined}
+                title={item.label}
+                className="absolute inset-0 flex items-center justify-center rounded-full focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              >
+                {/* Half the circle, so the glyph grows with the magnification
+                    instead of sitting at a fixed size inside a growing tile. */}
+                {Icon && <Icon aria-hidden="true" className="size-1/2" />}
+                {/* The dock is icon-only, so this is the link's *only*
+                    accessible name. `sr-only`, never `hidden`: `display: none`
+                    would strip it from the accessibility tree and leave four
+                    unnamed links. `title` gives sighted readers the same word
+                    on hover. */}
+                <span className="sr-only">{item.label}</span>
+              </Link>
+            </DockIcon>
+          );
+        })}
 
         {/*
          * Splits the dock into its two jobs: navigating the page on the left,
-         * acting on it on the right.
+         * acting on it on the right. `Dock` passes any child that is not a
+         * `DockIcon` straight through, so this does not magnify.
          *
-         * The height is explicit because the primitive ships `self-stretch`,
-         * and a rule the full 48px of the dock cuts the pill in half instead of
-         * separating two groups.
-         *
-         * Centred with `my-auto`, not `self-center`: that `self-stretch` is
-         * behind an attribute selector, so it outranks a plain utility on
-         * specificity and left the rule flush against the top edge. Auto
-         * cross-axis margins take the free space whatever `align-self` says.
+         * Centred with `my-auto`, not `self-center`: the primitive's
+         * `data-vertical:self-stretch` is behind an attribute selector, so it
+         * outranks a plain utility on specificity and left the rule flush
+         * against the top edge.
          *
          * `bg-foreground/…` rather than `bg-border`, for the same reason the
-         * dock's own edge uses it. Measured against the dock fill: 1.41:1 in
+         * dock's own edge uses it: measured against the dock fill, 1.41:1 in
          * light and 1.52:1 in dark, where `bg-border` would have given 1.21 and
-         * 1.31 — legible, but fainter than the pill's own outline.
+         * 1.31 — legible, but fainter than the dock's own outline.
          */}
         <Separator
           orientation="vertical"
-          className="mx-1 my-auto h-5 bg-foreground/15 sm:mx-1.5 sm:h-6"
+          className="mx-1 my-auto h-6 bg-foreground/15"
         />
 
-        {/* Controls */}
-        <div className="flex items-center gap-0.5">
+        <DockIcon className="relative text-muted-foreground transition-colors duration-200 hover:bg-muted/70 hover:text-foreground">
           {/* Magic UI owns the transition. Driven in *controlled* mode so
               next-themes stays the single source of truth: passing `theme`
               stops the component writing localStorage itself. `resolvedTheme`
               is undefined until next-themes resolves, and undefined would flip
-              it back to uncontrolled — hence the hydration gate. */}
+              it back to uncontrolled — hence the hydration gate.
+              No `aria-label`: the component renders its own sr-only name, and
+              an aria-label would override it. */}
           <AnimatedThemeToggler
             theme={hydrated && resolvedTheme === "dark" ? "dark" : "light"}
             onThemeChange={setTheme}
             disabled={!hydrated}
-            className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "icon" }),
+              // Covers and scales with the magnifying box; the cva above sizes
+              // to a fixed `size-9`, which would not.
+              "absolute inset-0 size-auto rounded-full [&_svg]:size-1/2",
+            )}
           />
+        </DockIcon>
 
-          {/* Sits to the right of the theme toggle. Icon-only, so the
-              `aria-label` is the *only* accessible name it has — without it the
-              link announces as nothing but its URL. It carries the new-tab
-              warning too, since there is no visible text left to hold it.
-              `size="icon"` matches the toggle beside it. */}
-          <Button variant="ghost" size="icon" asChild>
+        <DockIcon className="relative text-muted-foreground transition-colors duration-200 hover:bg-muted/70 hover:text-primary">
+          {/* Icon-only, so the `aria-label` is the *only* accessible name it
+              has — without it the link announces as nothing but its URL. It
+              carries the new-tab warning too, since there is no visible text
+              left to hold it. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            className="absolute inset-0 size-auto rounded-full"
+          >
             <a
               href={profile.socials.linkedin}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn profile (opens in a new tab)"
-              className="text-muted-foreground hover:text-primary"
+              title="LinkedIn"
             >
-              <LinkedInIcon className="size-4 shrink-0" />
+              <LinkedInIcon className="size-1/2" />
             </a>
           </Button>
-        </div>
-      </div>
+        </DockIcon>
+      </Dock>
     </header>
   );
 }

@@ -58,7 +58,7 @@ export default function TechStackPage() {
                     tops leaves them off by a few pixels. */}
                 <section
                   aria-labelledby={`${id}-heading`}
-                  className="grid scroll-mt-28 items-baseline gap-x-8 gap-y-3 sm:grid-cols-[10rem_1fr]"
+                  className="grid scroll-mt-32 items-baseline gap-x-8 gap-y-3 sm:grid-cols-[10rem_1fr]"
                 >
                   <h2 id={`${id}-heading`} className="text-sm font-medium">
                     {group.category}

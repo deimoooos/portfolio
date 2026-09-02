@@ -214,29 +214,65 @@ each `id` must match a section `id` on the **landing page**. Adding a nav item
 means adding a section with the same id — otherwise the link goes nowhere and the
 scroll spy silently skips it.
 
-**The dock is `fixed`, floating and top-centred.** `top-4` + `h-12` puts its
-bottom edge at 64px — the same as the full-width bar it replaced — so
-`ACTIVATION_LINE` (120) and the sections' `scroll-mt-28` (112px) are both
-derived from that edge — move the dock and both have to move. A bottom dock would mean re-deriving both. Its wrapper spans
-the viewport only to centre the pill, so it carries `pointer-events-none` with
-`pointer-events-auto` restored on the pill; without that it would eat clicks
-across the full width. Being `fixed`, it no longer occupies flow — `body` has
-`pt-16` to replace what it used to take.
+**The dock is Magic UI's `Dock`** (`src/components/ui/dock.tsx`), installed from
+its registry and wired up in `site-header.tsx`:
 
-**Nav items are icon + label, and there is no mobile Sheet any more.** Icons
-come from `NAV_ICONS` in `site-header.tsx`, keyed by nav id — kept out of
-`nav.ts` so that stays a plain data module with no React imports, the same split
-as `TECH_ICONS`. Two things to preserve:
+```bash
+npx shadcn@latest add @magicui/dock
+```
 
-- **The label is `sr-only sm:not-sr-only`, never `hidden`.** On mobile it is the
-  link's *only* accessible name; `display: none` would strip it from the
-  accessibility tree and leave four unnamed links. Verified against the a11y
-  tree, not just the attribute.
-- **Both layouts fit inside the dock's `h-12`.** Mobile links are `size-8`
-  (matching the toggle beside them, and above the 24px target minimum); desktop
-  stacks a `size-4` icon over an 11px label at 43px tall. That keeps the dock's
-  bottom edge at 64px, which is what `ACTIVATION_LINE` and the sections'
-  scroll margin are derived from.
+It is `fixed`, floating and top-centred. `top-4` + `h-16` puts its bottom edge
+at **80px**, and `ACTIVATION_LINE` (136), the sections' `scroll-mt-32` (128px)
+and `body`'s `pt-20` (80px) are all derived from that edge — move the dock and
+all three have to move. Its wrapper spans the viewport only to centre the dock,
+so it carries `pointer-events-none` with `pointer-events-auto` restored on the
+dock; without that it would eat clicks across the full width.
+
+Five things about the wiring are load-bearing:
+
+- **`iconMagnification` is 48, not Magic UI's 60.** The dock is `h-16` with
+  `p-2`, so 48px is exactly the content box. At the default, a magnified tile is
+  60px inside a 42px box and spills through the top and bottom edges — which
+  reads as intended on a macOS dock at the bottom of the screen and as broken on
+  one pinned to the top. Measured: vertical spill is 0px at rest *and* hovered.
+- **`mt-0` and `h-16` override the component.** `dockVariants` carries `mt-8`,
+  which would drop the dock 32px below where `top-4` puts it, and `h-[58px]`,
+  which does not fit the magnification.
+- **The fill, border and shadow are ours, not Magic UI's.** Theirs is
+  `bg-white/10` / `dark:bg-black/10` — raw palette colours this project does not
+  use, and nearly invisible in light mode. `shadow-foreground/…` rather than a
+  fixed black, because `--foreground` flips per theme, so one class casts a drop
+  shadow on light and a soft halo on dark.
+- **`role="navigation"` + `aria-label="Main"` go on the `Dock`.** It renders a
+  plain `motion.div`, so the `<nav>` landmark the old pill had has to come from
+  those props, or the section links sit in no landmark at all.
+- **Every target covers its whole circle.** `DockIcon` applies its padding as an
+  inline style that no class can override, so a link confined inside it had a
+  24px hit area in a 40px tile. The `DockIcon` gets `relative` and each link or
+  button `absolute inset-0`. Measured: all six targets are 40x40, and the glyphs
+  are `size-1/2` so they scale with the magnification instead of sitting at a
+  fixed size in a growing tile.
+
+**Two edits to the generated file**, which re-running `shadcn add @magicui/dock`
+would overwrite:
+
+- `DockIcon` wrapped its children in a bare `<div>` that collapses to its
+  content; it now carries `flex size-full items-center justify-center` so the
+  child can fill the magnifying box.
+- `DockProps` typed none of the props it spreads onto the `motion.div`, so the
+  component rejected the ARIA attributes it happily forwards. It now extends the
+  same `Omit<MotionProps & React.HTMLAttributes<HTMLDivElement>, "children">`
+  that `DockIconProps` already used.
+
+**The dock is icon-only, and the labels are `sr-only`.** Icons come from
+`NAV_ICONS` in `site-header.tsx`, keyed by nav id — kept out of `nav.ts` so that
+stays a plain data module with no React imports, the same split as `TECH_ICONS`.
+`DockIcon` is a fixed square that scales, so the visible icon-over-label layout
+the pill had does not survive the swap; `title` gives sighted readers the word on
+hover. **The `sr-only` span is never `hidden`** — it is each link's *only*
+accessible name, and `display: none` would strip it from the accessibility tree
+and leave four unnamed links. Verified against the a11y tree: "Home",
+"Experience", "Stack", "Contact".
 
 **A hairline separator splits navigation from the controls.** It is the shadcn
 `Separator`, and two of its classes are corrections rather than taste:
@@ -263,8 +299,8 @@ against the dark canvas — that is what made the dock read flat before.
 On a viewport tall enough to show everything, "bottomed out" is true at rest,
 which lit up the last nav item while the reader was at the top.
 
-**Sections clear the dock by more than the anchor's own error.** `scroll-mt-28`
-(112px) against a dock whose bottom edge is 64px looks over-generous until you
+**Sections clear the dock by more than the anchor's own error.** `scroll-mt-32`
+(128px) against a dock whose bottom edge is 80px looks over-generous until you
 measure where an anchor jump actually lands: 66, 68, 78, 81 and 83px against an
 80px margin, on five phone sizes. The landing sections sit inside a `[data-rise]`
 wrapper that is still mid-transform while the smooth scroll runs, so the browser
@@ -275,7 +311,7 @@ left **2px** of clearance under the dock on a 360x640 screen and 4px on a
 saw was the list, which is exactly what "I land in the middle of the section"
 looks like. Widening the margin is the fix that survives the error rather than
 one that assumes it away; measured clearance is now 31-51px everywhere, and the
-sections still activate because 112 stays below `ACTIVATION_LINE`.
+sections still activate because 128 stays below `ACTIVATION_LINE`.
 
 **At the page foot the spy follows the reader's request, not the geometry.**
 The page is short: on a 1280x800 viewport, jumping to `#tech` scrolls the whole
@@ -650,6 +686,6 @@ npx shadcn@latest add @magicui/animated-theme-toggler   # @magicui is in compone
 - **Yarn Classic has no `yarn dlx`.** Use `npx` for one-off CLIs.
 - Next 16 defaults to Turbopack; `--turbopack` is not a flag to add.
 - **The scroll spy is tuned to two numbers that must stay in sync**:
-  `ACTIVATION_LINE` (120) in `site-header.tsx` sits just below the sections'
-  `scroll-mt-28` (112px). Change the header height or that scroll margin and the
+  `ACTIVATION_LINE` (136) in `site-header.tsx` sits just below the sections'
+  `scroll-mt-32` (128px). Change the header height or that scroll margin and the
   active nav item goes out of step — the last section is the first to break.
