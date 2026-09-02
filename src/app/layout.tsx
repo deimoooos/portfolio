@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
@@ -46,6 +47,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader />
           {children}
         </ThemeProvider>
+
+        {/* Vercel Analytics. Renders nothing; it injects the collection script
+            and reports route changes. Only active on a Vercel deployment — off
+            a Vercel host it no-ops, so local builds are unaffected. */}
+        <Analytics />
       </body>
     </html>
   );

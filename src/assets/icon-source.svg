@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RC">
+  <!--
+    Master artwork for the favicons. NOT a route: it lives outside `src/app/`
+    on purpose, because any `icon.*` inside that directory becomes another
+    emitted <link rel="icon">.
+
+    The shipped icons are PNGs rendered from this file — `src/app/icon.png`
+    (32), `icon1.png` (192) and `apple-icon.png` (180, with rx="0"). Edit here,
+    then re-render; do not hand-edit the PNGs.
+
+    Stops are `--gradient-from` / `--gradient-to` resolved to sRGB. Hard-coded
+    because an icon cannot read the page's custom properties, and a favicon has
+    no theme to follow. The light-mode pair is the dark one, so white letters
+    sit on it at high contrast and the tile reads against light and dark
+    browser chrome alike.
+
+    "Jr" is a suffix, not an initial, so the monogram is RC. Drawn with a system
+    font stack rather than Geist: this is rasterised outside the page, where a
+    webfont is not available to it.
+  -->
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1b3a6b" />
+      <stop offset="1" stop-color="#006687" />
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="14" fill="url(#brand)" />
+
+  <text
+    x="32"
+    y="43"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    font-size="31"
+    font-weight="700"
+    letter-spacing="-1.5"
+    fill="#ffffff"
+  >RC</text>
+</svg>

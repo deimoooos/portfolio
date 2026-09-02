@@ -39,6 +39,51 @@ docker build -t portfolio .
 docker run --rm -p 3000:3000 portfolio
 ```
 
+## Icons
+
+The favicon is the initials "RC" in white on the site's own blue-to-steel
+gradient. Three PNGs in `src/app/`, which Next turns into `<link>` tags on its
+own — there is no `metadata.icons` entry to keep in step:
+
+| File | Size | Emitted as |
+|---|---|---|
+| `icon.png` | 32 | `rel="icon" sizes="32x32"` |
+| `icon1.png` | 192 | `rel="icon" sizes="192x192"` (numbered files sort lexically) |
+| `apple-icon.png` | 180 | `rel="apple-touch-icon"` |
+
+- **The master is `src/assets/icon-source.svg`**, deliberately outside
+  `src/app/` — any `icon.*` in that directory becomes another emitted icon.
+  Edit the SVG and re-render; do not hand-edit the PNGs.
+- **The two favicons are RGBA with transparent corners; `apple-icon.png` is
+  opaque and full-bleed** (`rx="0"`). iOS masks its own squircle and renders
+  transparency as black, so a rounded, transparent Apple icon shows black
+  corners inside the mask.
+- **Rasterising needs a transparent backdrop.** Rendering through headless
+  Chrome without `Emulation.setDefaultBackgroundColorOverride({color:{r:0,g:0,b:0,a:0}})`
+  composites onto the browser's opaque white canvas: that is where white corners
+  come from, and it also strips the alpha channel. A `favicon.ico` built from
+  those RGB frames **failed the build** — Turbopack rejects it with "The PNG is
+  not in RGBA format!".
+- **There is no `favicon.ico`.** create-next-app's default (the Next logo) was
+  removed, since browsers request `/favicon.ico` in preference to a declared
+  icon and it would have won. That path now 404s; every modern browser uses the
+  declared PNGs instead.
+- The gradient stops are the sRGB values of `--gradient-from` / `--gradient-to`
+  (`#1b3a6b`, `#006687`). Change the tokens and these do not follow — an icon
+  file cannot read custom properties.
+
+## Analytics
+
+`@vercel/analytics` is mounted as `<Analytics />` at the end of `<body>` in
+`layout.tsx`. It renders nothing and only collects on a Vercel deployment; off
+that host it no-ops, so local and Docker builds are unaffected. Confirmed live
+in the DOM — in development it loads `va.vercel-scripts.com/v1/script.debug.js`,
+in production `/_vercel/insights/script.js`.
+
+**Install it with `yarn add`, not `npm i`.** This project is Yarn 1 with a
+`yarn.lock`; an `npm install` writes a `package-lock.json` beside it and the two
+drift.
+
 ## Deployment
 
 **`output: "standalone"` is opt-in, gated on `BUILD_STANDALONE=1`, and the
@@ -64,6 +109,8 @@ to production for no reason.
 
 ```
 src/app/                     App Router: layout.tsx, page.tsx, globals.css
+src/app/icon*.png            Favicons; apple-icon.png for iOS
+src/assets/                  Source artwork, not routes (icon-source.svg)
 src/app/experience/page.tsx  The detailed career history
 src/app/tech-stack/page.tsx  The full, grouped tech stack
 src/components/              Own components
