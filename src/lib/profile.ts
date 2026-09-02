@@ -9,7 +9,7 @@ export const profile = {
   role: "Full-stack Software Engineer",
   available: false,
   summary:
-    "I am Sen, a full-stack software engineer and an architecture enthusiasts for a secure, robust, and reliable system platform architectures",
+    "I’m Sen, a Full-Stack Software Engineer and an architecture enthusiast with a strong passion for designing secure, robust, and reliable system architectures and platforms.",
   email: "rosendocoquilla@gmail.com",
   socials: {
     // Replace with your real profile URL.
